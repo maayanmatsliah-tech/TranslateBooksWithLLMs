@@ -223,9 +223,15 @@
 
                         <!-- Ollama Endpoint -->
                         <div class="form-group" id="ollamaSettings" style="margin-bottom: 0;">
-                            <label>API Endpoint</label>
-                            <div class="neu-inset-light">
-                                <input type="text" class="form-control" id="apiEndpoint" value="http://localhost:11434/api/generate">
+                            <label>
+                                API Endpoint
+                                <span id="apiEndpointBadge" class="badge badge-customized" style="display: none; margin-left: 8px; font-size: 0.75rem; background: #f59e0b; color: white; padding: 2px 8px; border-radius: 12px;">personnalisé</span>
+                            </label>
+                            <div class="neu-inset-light" style="display: flex; gap: 8px;">
+                                <input type="text" class="form-control" id="apiEndpoint" value="http://localhost:11434/api/generate" style="flex: 1;">
+                                <button type="button" id="resetApiEndpointBtn" class="btn btn-secondary" style="display: none; padding: 8px 12px; white-space: nowrap;" title="Réinitialiser à la configuration serveur">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">restart_alt</span>
+                                </button>
                             </div>
                         </div>
 
@@ -300,9 +306,15 @@
                     <!-- OpenAI Endpoint Row (shown only for OpenAI provider) -->
                     <div id="openaiEndpointRow" style="display: none; margin-bottom: 15px;">
                         <div class="form-group" style="margin-bottom: 0;">
-                            <label>API Endpoint</label>
-                            <div class="neu-inset-light">
-                                <input type="text" class="form-control" id="openaiEndpoint" value="https://api.openai.com/v1/chat/completions" placeholder="https://api.openai.com/v1/chat/completions">
+                            <label>
+                                API Endpoint
+                                <span id="openaiEndpointBadge" class="badge badge-customized" style="display: none; margin-left: 8px; font-size: 0.75rem; background: #f59e0b; color: white; padding: 2px 8px; border-radius: 12px;">personnalisé</span>
+                            </label>
+                            <div class="neu-inset-light" style="display: flex; gap: 8px;">
+                                <input type="text" class="form-control" id="openaiEndpoint" value="https://api.openai.com/v1/chat/completions" placeholder="https://api.openai.com/v1/chat/completions" style="flex: 1;">
+                                <button type="button" id="resetOpenaiEndpointBtn" class="btn btn-secondary" style="display: none; padding: 8px 12px; white-space: nowrap;" title="Réinitialiser à la configuration serveur">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">restart_alt</span>
+                                </button>
                             </div>
                             <small style="color: var(--text-muted-light); font-size: 0.75rem; margin-top: 0.5rem; display: block;">Local servers: llama.cpp (8080), LM Studio (1234), vLLM, etc.</small>
                         </div>

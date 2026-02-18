@@ -140,6 +140,46 @@ export const FormManager = {
                 this.resetForm();
             });
         }
+
+        // Endpoint change listeners - detect manual modifications
+        const apiEndpoint = DomHelpers.getElement('apiEndpoint');
+        if (apiEndpoint) {
+            apiEndpoint.addEventListener('change', () => {
+                SettingsManager.markEndpointCustomized('ollama');
+                console.log('[FormManager] Ollama endpoint customized by user');
+            });
+        }
+
+        const openaiEndpoint = DomHelpers.getElement('openaiEndpoint');
+        if (openaiEndpoint) {
+            openaiEndpoint.addEventListener('change', () => {
+                SettingsManager.markEndpointCustomized('openai');
+                console.log('[FormManager] OpenAI endpoint customized by user');
+            });
+        }
+
+        // Reset endpoint to server default buttons
+        const resetApiEndpointBtn = DomHelpers.getElement('resetApiEndpointBtn');
+        if (resetApiEndpointBtn) {
+            resetApiEndpointBtn.addEventListener('click', () => {
+                const config = StateManager.getState('ui.defaultConfig');
+                const serverEndpoint = config?.ollama_api_endpoint || config?.api_endpoint;
+                if (serverEndpoint) {
+                    SettingsManager.resetEndpointToServerDefault('ollama', serverEndpoint);
+                }
+            });
+        }
+
+        const resetOpenaiEndpointBtn = DomHelpers.getElement('resetOpenaiEndpointBtn');
+        if (resetOpenaiEndpointBtn) {
+            resetOpenaiEndpointBtn.addEventListener('click', () => {
+                const config = StateManager.getState('ui.defaultConfig');
+                const serverEndpoint = config?.openai_api_endpoint;
+                if (serverEndpoint) {
+                    SettingsManager.resetEndpointToServerDefault('openai', serverEndpoint);
+                }
+            });
+        }
     },
 
     /**
@@ -356,18 +396,38 @@ export const FormManager = {
                 : '';  // Empty = auto-detect from file
             setDefaultLanguage('sourceLang', 'customSourceLang', sourceLanguage)
 
-            // Set provider-specific API endpoints
+            // Set provider-specific API endpoints with smart merge:
+            // - If user has customized endpoint, keep it and show badge
+            // - Otherwise use server default (.env)
             // Ollama endpoint (for Ollama provider)
-            if (config.ollama_api_endpoint) {
-                DomHelpers.setValue('apiEndpoint', config.ollama_api_endpoint);
-            } else if (config.api_endpoint) {
-                // Fallback to legacy api_endpoint for backward compatibility
-                DomHelpers.setValue('apiEndpoint', config.api_endpoint);
+            const ollamaEndpoint = config.ollama_api_endpoint || config.api_endpoint;
+            if (ollamaEndpoint) {
+                const prefs = SettingsManager.getLocalPreferences();
+                // Check if user has a customized endpoint
+                if (prefs.apiEndpointCustomized && prefs.lastApiEndpoint) {
+                    // User customized - keep their value but show badge
+                    SettingsManager.updateEndpointBadge('ollama', true);
+                    console.log('[FormManager] Using customized Ollama endpoint:', prefs.lastApiEndpoint);
+                } else {
+                    // Use server default
+                    DomHelpers.setValue('apiEndpoint', ollamaEndpoint);
+                }
             }
+            
             // OpenAI endpoint (for OpenAI-compatible providers like OpenAI, LM Studio)
             if (config.openai_api_endpoint) {
-                DomHelpers.setValue('openaiEndpoint', config.openai_api_endpoint);
+                const prefs = SettingsManager.getLocalPreferences();
+                // Check if user has a customized endpoint
+                if (prefs.openaiEndpointCustomized && prefs.lastOpenaiEndpoint) {
+                    // User customized - keep their value but show badge
+                    SettingsManager.updateEndpointBadge('openai', true);
+                    console.log('[FormManager] Using customized OpenAI endpoint:', prefs.lastOpenaiEndpoint);
+                } else {
+                    // Use server default
+                    DomHelpers.setValue('openaiEndpoint', config.openai_api_endpoint);
+                }
             }
+            
             // Output filename pattern (naming convention)
             if (config.output_filename_pattern) {
                 DomHelpers.setValue('outputFilenamePattern', config.output_filename_pattern);

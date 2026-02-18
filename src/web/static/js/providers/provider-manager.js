@@ -365,8 +365,18 @@ export const ProviderManager = {
         // Initialize SearchableSelect for model dropdown
         this.initSearchableModelSelect();
 
-        // Show initial provider settings and load models immediately
-        this.toggleProviderSettings(true);
+        // Show initial provider settings UI but DON'T load models yet.
+        // We must wait for FormManager.loadDefaultConfig() to complete
+        // and update the API endpoints from server configuration.
+        // This fixes GitHub issue #108 part 2: Ollama endpoint was using
+        // localhost instead of the configured remote server.
+        this.toggleProviderSettings(false);
+
+        // Listen for server config to be loaded, THEN load models with correct endpoint
+        window.addEventListener('defaultConfigLoaded', () => {
+            console.log('[ProviderManager] Server config loaded, now loading models with correct endpoint');
+            this.toggleProviderSettings(true);
+        }, { once: true });
     },
 
     /**

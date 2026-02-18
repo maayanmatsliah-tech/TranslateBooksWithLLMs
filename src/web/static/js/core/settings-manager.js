@@ -66,7 +66,9 @@ const LOCAL_SETTINGS = [
     'textCleanup',
     'refineTranslation',
     'bilingualMode',
-    'customInstructionFile'
+    'customInstructionFile',
+    'apiEndpointCustomized',  // Track if user manually changed endpoint
+    'openaiEndpointCustomized'
 ];
 
 /**
@@ -308,13 +310,16 @@ export const SettingsManager = {
         }
 
         // Apply last provider AFTER endpoints are set
-        // This triggers model loading with the correct endpoint
+        // NOTE: We set the provider value but DON'T trigger the change event here.
+        // The change event would trigger model loading, but we need to wait for
+        // FormManager.loadDefaultConfig() to complete and update the endpoint
+        // from the server configuration first (fixes GitHub issue #108 part 2).
         if (prefs.lastProvider) {
             const providerSelect = DomHelpers.getElement('llmProvider');
             if (providerSelect) {
                 providerSelect.value = prefs.lastProvider;
-                // Trigger change event to show correct settings panel and load models
-                providerSelect.dispatchEvent(new Event('change'));
+                // Don't trigger change event - ProviderManager will handle model loading
+                // after the 'defaultConfigLoaded' event is dispatched
             }
         }
 
@@ -645,6 +650,104 @@ export const SettingsManager = {
      */
     isEnvModelApplied() {
         return envModelApplied;
+    },
+
+    /**
+     * Mark an endpoint as customized by the user
+     * @param {string} endpointType - 'ollama' or 'openai'
+     */
+    markEndpointCustomized(endpointType) {
+        const key = endpointType === 'openai' ? 'openaiEndpointCustomized' : 'apiEndpointCustomized';
+        this.saveLocalPreferences({ [key]: true });
+        this.updateEndpointBadge(endpointType, true);
+    },
+
+    /**
+     * Check if an endpoint was customized by the user
+     * @param {string} endpointType - 'ollama' or 'openai'
+     * @returns {boolean}
+     */
+    isEndpointCustomized(endpointType) {
+        const prefs = this.getLocalPreferences();
+        return endpointType === 'openai' 
+            ? prefs.openaiEndpointCustomized 
+            : prefs.apiEndpointCustomized;
+    },
+
+    /**
+     * Reset endpoint to server default (.env value)
+     * @param {string} endpointType - 'ollama' or 'openai'
+     * @param {string} serverValue - The value from server config
+     */
+    resetEndpointToServerDefault(endpointType, serverValue) {
+        const inputId = endpointType === 'openai' ? 'openaiEndpoint' : 'apiEndpoint';
+        const key = endpointType === 'openai' ? 'openaiEndpointCustomized' : 'apiEndpointCustomized';
+        const storageKey = endpointType === 'openai' ? 'lastOpenaiEndpoint' : 'lastApiEndpoint';
+        
+        // Update input field
+        DomHelpers.setValue(inputId, serverValue);
+        
+        // Clear customized flag
+        const prefs = this.getLocalPreferences();
+        delete prefs[key];
+        delete prefs[storageKey];
+        this.saveLocalPreferences(prefs);
+        
+        // Update badge
+        this.updateEndpointBadge(endpointType, false);
+        
+        // Reload models with new endpoint
+        const currentProvider = DomHelpers.getValue('llmProvider');
+        if (currentProvider === endpointType || (endpointType === 'ollama' && currentProvider === 'ollama')) {
+            window.dispatchEvent(new Event('endpointReset'));
+        }
+        
+        MessageLogger.addLog(`↺ Endpoint reset to server default`);
+    },
+
+    /**
+     * Update the visual badge for endpoint customization
+     * @param {string} endpointType - 'ollama' or 'openai'
+     * @param {boolean} isCustomized - Whether the endpoint is customized
+     */
+    updateEndpointBadge(endpointType, isCustomized) {
+        const badgeId = endpointType === 'openai' ? 'openaiEndpointBadge' : 'apiEndpointBadge';
+        const badge = DomHelpers.getElement(badgeId);
+        if (badge) {
+            badge.style.display = isCustomized ? 'inline-block' : 'none';
+        }
+        
+        // Also show/hide the reset button
+        const resetBtnId = endpointType === 'openai' ? 'resetOpenaiEndpointBtn' : 'resetApiEndpointBtn';
+        const resetBtn = DomHelpers.getElement(resetBtnId);
+        if (resetBtn) {
+            resetBtn.style.display = isCustomized ? 'inline-flex' : 'none';
+        }
+    },
+
+    /**
+     * Initialize endpoint badges on page load
+     * Call this after server config is loaded
+     * @param {Object} serverConfig - The config from /api/config
+     */
+    initializeEndpointBadges(serverConfig) {
+        const prefs = this.getLocalPreferences();
+        
+        // Check Ollama endpoint
+        if (prefs.apiEndpointCustomized && prefs.lastApiEndpoint) {
+            const serverEndpoint = serverConfig.ollama_api_endpoint || serverConfig.api_endpoint;
+            if (prefs.lastApiEndpoint !== serverEndpoint) {
+                this.updateEndpointBadge('ollama', true);
+            }
+        }
+        
+        // Check OpenAI endpoint
+        if (prefs.openaiEndpointCustomized && prefs.lastOpenaiEndpoint) {
+            const serverEndpoint = serverConfig.openai_api_endpoint;
+            if (prefs.lastOpenaiEndpoint !== serverEndpoint) {
+                this.updateEndpointBadge('openai', true);
+            }
+        }
     }
 };
 
