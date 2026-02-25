@@ -7,7 +7,7 @@ This guide explains how to use the official Docker images published to GitHub Co
 ### Pull the Latest Image
 
 ```bash
-docker pull ghcr.io/hydropix/translatebookwithllm:latest
+docker pull ghcr.io/hydropix/translatebookswithllms:latest
 ```
 
 ### Run the Container
@@ -19,7 +19,7 @@ docker run -d \
   -v $(pwd)/logs:/app/logs \
   -e API_ENDPOINT=http://host.docker.internal:11434/api/generate \
   -e DEFAULT_MODEL=qwen3:14b \
-  ghcr.io/hydropix/translatebookwithllm:latest
+  ghcr.io/hydropix/translatebookswithllms:latest
 ```
 
 Access the web interface at: `http://localhost:5000`
@@ -58,7 +58,7 @@ version: '3.8'
 
 services:
   translate-book:
-    image: ghcr.io/hydropix/translatebookwithllm:latest
+    image: ghcr.io/hydropix/translatebookswithllms:latest
     ports:
       - "5000:5000"
     volumes:
@@ -133,7 +133,7 @@ docker run -d \
   -p 5000:5000 \
   -e API_ENDPOINT=http://host.docker.internal:11434/api/generate \
   -e DEFAULT_MODEL=qwen3:14b \
-  ghcr.io/hydropix/translatebookwithllm:latest
+  ghcr.io/hydropix/translatebookswithllms:latest
 ```
 
 **Note**: `host.docker.internal` allows the container to access services on the host.
@@ -152,7 +152,7 @@ services:
       - ollama_data:/root/.ollama
 
   translate-book:
-    image: ghcr.io/hydropix/translatebookwithllm:latest
+    image: ghcr.io/hydropix/translatebookswithllms:latest
     ports:
       - "5000:5000"
     environment:
@@ -175,7 +175,7 @@ docker run -d \
   -e LLM_PROVIDER=gemini \
   -e GEMINI_API_KEY=your_api_key_here \
   -e DEFAULT_MODEL=gemini-2.0-flash \
-  ghcr.io/hydropix/translatebookwithllm:latest
+  ghcr.io/hydropix/translatebookswithllms:latest
 ```
 
 ### OpenAI
@@ -187,7 +187,7 @@ docker run -d \
   -e OPENAI_API_KEY=your_api_key_here \
   -e API_ENDPOINT=https://api.openai.com/v1/chat/completions \
   -e DEFAULT_MODEL=gpt-4o \
-  ghcr.io/hydropix/translatebookwithllm:latest
+  ghcr.io/hydropix/translatebookswithllms:latest
 ```
 
 ## Health Check
@@ -267,13 +267,13 @@ Images are automatically built and published to GitHub Container Registry when:
 
 ```bash
 # Latest version
-docker pull ghcr.io/hydropix/translatebookwithllm:latest
+docker pull ghcr.io/hydropix/translatebookswithllms:latest
 
 # Specific version
-docker pull ghcr.io/hydropix/translatebookwithllm:v1.2.3
+docker pull ghcr.io/hydropix/translatebookswithllms:v1.2.3
 
 # Specific commit
-docker pull ghcr.io/hydropix/translatebookwithllm:main-abc1234
+docker pull ghcr.io/hydropix/translatebookswithllms:main-abc1234
 ```
 
 ## CI/CD Integration
