@@ -108,13 +108,3 @@ Les images suivantes seront créées :
 | `PORT` | Port du serveur | `5000` |
 | `DEBUG_MODE` | Mode debug verbose | `false` |
 
-## Test du bug #108
-
-Pour vérifier que le bug #108 est corrigé :
-
-1. Lancer le conteneur avec `DEFAULT_TARGET_LANGUAGE=Italian`
-2. Ouvrir http://localhost:5000 en **fenêtre privée** (pour éviter le cache localStorage)
-3. Vérifier que "Target Language" affiche **"Italian"** et non pas la langue du navigateur
-
-Si la langue affichée est celle du navigateur, le bug est présent.
-Si c'est "Italian", le bug est corrigé.
