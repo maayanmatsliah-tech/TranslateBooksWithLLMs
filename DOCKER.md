@@ -82,6 +82,31 @@ services:
 docker compose up -d
 ```
 
+## Using with Remote Ollama Server
+
+If your Ollama server is on a different machine in your local network:
+
+```yaml
+version: '3.8'
+
+services:
+  translate-book:
+    image: ghcr.io/hydropix/translatebookswithllms:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - API_ENDPOINT=http://ollama-server.local:11434/api/generate
+      - LLM_PROVIDER=ollama
+    extra_hosts:
+      # Map hostname to IP (required for Docker Desktop on Windows/Mac)
+      - "ollama-server.local:192.168.1.100"
+    volumes:
+      - ./translated_files:/app/translated_files
+      - ./logs:/app/logs
+```
+
+**Note:** Docker Desktop isolates containers from your local network. Use `extra_hosts` to map hostnames to IP addresses.
+
 ## Multi-Platform Support
 
 The images are built for multiple architectures:
