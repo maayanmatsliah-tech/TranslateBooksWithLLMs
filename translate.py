@@ -1,22 +1,28 @@
 """
 Command-line interface for text translation
 """
-import os
 import argparse
 import asyncio
+import json
 import logging
+import os
 
 # Reduce verbosity of httpx (avoid showing 400 errors during model detection)
 logging.getLogger('httpx').setLevel(logging.WARNING)
 
-from src.config import DEFAULT_MODEL, API_ENDPOINT, LLM_PROVIDER, GEMINI_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, MISTRAL_API_KEY, DEEPSEEK_API_KEY, POE_API_KEY, DEFAULT_SOURCE_LANGUAGE, DEFAULT_TARGET_LANGUAGE
-from src.utils.file_utils import get_unique_output_path, generate_tts_for_translation
-from src.utils.unified_logger import setup_cli_logger, LogType
-from src.tts.tts_config import TTSConfig, TTS_ENABLED, TTS_VOICE, TTS_RATE, TTS_BITRATE, TTS_OUTPUT_FORMAT
-from src.persistence.checkpoint_manager import CheckpointManager
-from src.core.adapters import translate_file
 import uuid
 
+from src.config import (API_ENDPOINT, DEEPSEEK_API_KEY, DEFAULT_MODEL,
+                        DEFAULT_SOURCE_LANGUAGE, DEFAULT_TARGET_LANGUAGE,
+                        GEMINI_API_KEY, LLM_PROVIDER, MISTRAL_API_KEY,
+                        OPENAI_API_KEY, OPENROUTER_API_KEY, POE_API_KEY)
+from src.core.adapters import translate_file
+from src.persistence.checkpoint_manager import CheckpointManager
+from src.tts.tts_config import (TTS_BITRATE, TTS_ENABLED, TTS_OUTPUT_FORMAT,
+                                TTS_RATE, TTS_VOICE, TTSConfig)
+from src.utils.file_utils import (generate_tts_for_translation,
+                                  get_unique_output_path)
+from src.utils.unified_logger import LogLevel, LogType, setup_cli_logger
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Translate a text, EPUB or SRT file using an LLM.")
@@ -34,6 +40,13 @@ if __name__ == "__main__":
     parser.add_argument("--deepseek_api_key", default=DEEPSEEK_API_KEY, help="DeepSeek API key (required if using deepseek provider).")
     parser.add_argument("--poe_api_key", default=POE_API_KEY, help="Poe API key (required if using poe provider). Get your key at https://poe.com/api_key")
     parser.add_argument("--no-color", action="store_true", help="Disable colored output.")
+
+    # Output and reporting options**
+    output_group = parser.add_argument_group('Output & Reporting', 'Control output format and reporting')
+    output_group.add_argument("--output-format", choices=["txt", "json", "csv"], default="txt", help="Output format for statistics (default: txt)")
+    output_group.add_argument("--save-stats", help="Save translation statistics to file")
+    output_group.add_argument("--verbose", action="store_true", help="Show detailed progress information")
+    output_group.add_argument("--quiet", action="store_true", help="Suppress non-error output")
 
     # Prompt options (optional system prompt instructions)
     prompt_group = parser.add_argument_group('Prompt Options', 'Optional instructions to include in the translation prompt')
@@ -70,10 +83,18 @@ if __name__ == "__main__":
         file_type = "SRT"
     else:
         file_type = "TEXT"
-    
+
     # Setup unified logger
     logger = setup_cli_logger(enable_colors=not args.no_color)
-    
+
+    # Adjust verbosity based on user flags**
+    if args.quiet:
+        logger.min_level = LogLevel.ERROR
+    elif args.verbose:
+        logger.min_level = LogLevel.DEBUG
+    else:
+        logger.min_level = LogLevel.INFO
+
     # Validate API keys for providers
     if args.provider == "gemini" and not args.gemini_api_key:
         parser.error("--gemini_api_key is required when using gemini provider")
@@ -109,6 +130,18 @@ if __name__ == "__main__":
         total = stats.get('total_chunks', 0)
         if total > 0:
             logger.update_progress(completed, total)
+
+        # Save translation statistics to a file if requested**
+        if args.save_stats:
+            with open(args.save_stats, 'w', encoding='utf-8') as f:
+                if args.output_format == "json":
+                    json.dump(stats, f, indent=4)
+                elif args.output_format == "csv":
+                    f.write(",".join(map(str, stats.keys())) + "\n")
+                    f.write(",".join(map(str, stats.values())) + "\n")
+                else:
+                    for key, value in stats.items():
+                        f.write(f"{key}: {value}\n")
 
     # Build prompt_options from CLI arguments
     # Technical content protection is now always enabled
